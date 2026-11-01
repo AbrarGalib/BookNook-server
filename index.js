@@ -42,6 +42,16 @@ async function run() {
       const result = await booksCollection.insertOne(newBook);
       res.send(result);
     });
+    app.patch("/books/:id", verifyToken, async (req, res) => {
+      const { _id, ...updatedData } = req.body;
+      const result = await booksCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: updatedData });
+      res.send(result);
+    });
+
+    app.delete("/books/:id", verifyToken, async (req, res) => {
+      const result = await booksCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+      res.send(result);
+    });
   } finally {}
 }
 run().catch(console.dir);
