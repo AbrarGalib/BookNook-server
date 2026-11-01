@@ -52,6 +52,20 @@ async function run() {
       const result = await booksCollection.deleteOne({ _id: new ObjectId(req.params.id) });
       res.send(result);
     });
+    const borrowsCollection = db.collection("borrows");
+
+    app.post("/borrows", verifyToken, async (req, res) => {
+      const { bookId, userEmail, bookTitle, bookImage, borrowDate, returnDate } = req.body;
+      const existing = await borrowsCollection.findOne({ bookId, userEmail });
+      if (existing) return res.status(400).send({ message: "Already borrowed." });
+
+      const book = await booksCollection.findOne({ _id: new ObjectId(bookId) });
+      if (!book || book.totalCopies <= 0) return res.status(400).send({ message: "Out of stock." });
+
+      const result = await borrowsCollection.insertOne(req.body);
+      await booksCollection.updateOne({ _id: new ObjectId(bookId) }, { $inc: { totalCopies: -1 } });
+      res.send(result);
+    });
   } finally {}
 }
 run().catch(console.dir);
