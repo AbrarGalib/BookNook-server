@@ -24,6 +24,19 @@ async function run() {
   try {
     await client.connect();
     console.log("Connected to MongoDB");
+    const db = client.db("bookNookDB");
+    const booksCollection = db.collection("books");
+
+    app.get("/books", async (req, res) => {
+      const limit = parseInt(req.query.limit) || 0;
+      const books = await booksCollection.find().sort({ createdAt: -1 }).limit(limit).toArray();
+      res.send(books);
+    });
+
+    app.get("/books/:id", verifyToken, async (req, res) => {
+      const book = await booksCollection.findOne({ _id: new ObjectId(req.params.id) });
+      res.send(book);
+    });
   } finally {}
 }
 run().catch(console.dir);
