@@ -66,6 +66,20 @@ async function run() {
       await booksCollection.updateOne({ _id: new ObjectId(bookId) }, { $inc: { totalCopies: -1 } });
       res.send(result);
     });
+    app.get("/borrows", verifyToken, async (req, res) => {
+      if (req.user.email !== req.query.email) return res.status(403).send({ message: "Forbidden" });
+      const borrows = await borrowsCollection.find({ userEmail: req.query.email }).toArray();
+      res.send(borrows);
+    });
+
+    app.delete("/borrows/:id", verifyToken, async (req, res) => {
+      const record = await borrowsCollection.findOne({ _id: new ObjectId(req.params.id) });
+      if (!record) return res.status(404).send({ message: "Not found" });
+      
+      const result = await borrowsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+      await booksCollection.updateOne({ _id: new ObjectId(record.bookId) }, { $inc: { totalCopies: 1 } });
+      res.send(result);
+    });
   } finally {}
 }
 run().catch(console.dir);
