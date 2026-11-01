@@ -37,6 +37,11 @@ async function run() {
       const book = await booksCollection.findOne({ _id: new ObjectId(req.params.id) });
       res.send(book);
     });
+    app.post("/books", verifyToken, async (req, res) => {
+      const newBook = { ...req.body, createdAt: new Date() };
+      const result = await booksCollection.insertOne(newBook);
+      res.send(result);
+    });
   } finally {}
 }
 run().catch(console.dir);
