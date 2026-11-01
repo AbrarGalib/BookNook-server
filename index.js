@@ -1,10 +1,16 @@
-
 import express from "express";
 import { MongoClient, ServerApiVersion, ObjectId } from "mongodb";
 import cors from "cors";
 import dotenv from "dotenv";
-dotenv.config();
 import jwt from "jsonwebtoken";
+
+dotenv.config();
+
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
 
 const verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
@@ -26,6 +32,8 @@ async function run() {
     console.log("Connected to MongoDB");
     const db = client.db("bookNookDB");
     const booksCollection = db.collection("books");
+    const borrowsCollection = db.collection("borrows");
+
 
     app.get("/books", async (req, res) => {
       const limit = parseInt(req.query.limit) || 0;
@@ -37,11 +45,13 @@ async function run() {
       const book = await booksCollection.findOne({ _id: new ObjectId(req.params.id) });
       res.send(book);
     });
+
     app.post("/books", verifyToken, async (req, res) => {
       const newBook = { ...req.body, createdAt: new Date() };
       const result = await booksCollection.insertOne(newBook);
       res.send(result);
     });
+
     app.patch("/books/:id", verifyToken, async (req, res) => {
       const { _id, ...updatedData } = req.body;
       const result = await booksCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: updatedData });
@@ -52,7 +62,6 @@ async function run() {
       const result = await booksCollection.deleteOne({ _id: new ObjectId(req.params.id) });
       res.send(result);
     });
-    const borrowsCollection = db.collection("borrows");
 
     app.post("/borrows", verifyToken, async (req, res) => {
       const { bookId, userEmail, bookTitle, bookImage, borrowDate, returnDate } = req.body;
@@ -66,6 +75,7 @@ async function run() {
       await booksCollection.updateOne({ _id: new ObjectId(bookId) }, { $inc: { totalCopies: -1 } });
       res.send(result);
     });
+
     app.get("/borrows", verifyToken, async (req, res) => {
       if (req.user.email !== req.query.email) return res.status(403).send({ message: "Forbidden" });
       const borrows = await borrowsCollection.find({ userEmail: req.query.email }).toArray();
@@ -84,9 +94,5 @@ async function run() {
 }
 run().catch(console.dir);
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
 app.get('/', (req, res) => res.send('BookNook Server is running'));
-app.listen(process.env.PORT || 5000, () => console.log("Server running"));
+app.listen(process.env.PORT || 5000, () => console.log(`Server running on port ${process.env.PORT || 5000}`));
