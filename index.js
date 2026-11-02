@@ -99,4 +99,10 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => res.send('BookNook Server is running'));
-app.listen(process.env.PORT || 5000, () => console.log(`Server running on port ${process.env.PORT || 5000}`));
+
+// Only listen locally, export app for Vercel serverless function
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(process.env.PORT || 5000, () => console.log(`Server running locally`));
+}
+
+export default app;
